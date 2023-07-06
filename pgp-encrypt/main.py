@@ -24,15 +24,16 @@ def get_exists_key():
     # with open('./0x32404A4B-pub.asc') as f:
     #     pub_key.parse(f.read())
 
-    with open('./la_private.asc') as private:
+    with open('./keys/la_private.asc') as private:
         pri_key.parse(private.read())
 
-    with open('./vcb_demo_public.asc') as public:
+    with open('./keys/vcb_public.asc') as public:
         pub_key.parse(public.read())
 
     pub_key._require_usage_flags = False
 
     return pri_key, pub_key
+
 
 # pri, pub = self_create_key()
 pri, pub = get_exists_key()

@@ -39,33 +39,15 @@ def create_signature(data, private_key):
         algorithm=hashes.SHA256(),
     )
 
-    print('hex ne', signature_bytes)
     return base64.b64encode(signature_bytes)
 
 
-# pri_key = load_private_key()
-# print('===>', pri_key.public_key())
-# pub_pem = pri_key.public_key().public_bytes(serialization.Encoding.PEM, serialization.PublicFormat.SubjectPublicKeyInfo)
-# print('==>', pub_pem.decode('utf-8'))
-
+pri_key = load_private_key()
 dataString1 = json.dumps(data, separators=(',', ':'))
 print('data to sign==>', dataString1)
 
 signature = create_signature(
     dataString1.encode('utf-8'),
-    load_private_key(),
+    pri_key,
 )
 print('sign 1==>', signature)
-
-
-# signature = load_private_key().sign(
-#     dataString1,
-#     padding.OAEP(
-#         mgf=padding.MGF1(algorithm=hashes.SHA1()),
-#         algorithm=hashes.SHA1(),
-#         label=None
-#     ),
-#     hashes.SHA256(),
-# )
-# print('raw sign=>', signature)
-# print('b64 ne===>', base64.b64encode(signature))
