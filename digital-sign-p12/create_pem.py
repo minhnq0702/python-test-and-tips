@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import datetime
-import hashlib
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
@@ -8,20 +7,35 @@ from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
 
+import CONST
+
 # Tạo một cặp khóa RSA
 private_key = rsa.generate_private_key(
     public_exponent=65537,
     key_size=2048,
-    backend=default_backend()
+    backend=default_backend(),
 )
 
 # Tạo một chứng chỉ số self-signed
-subject = issuer = x509.Name([
-    x509.NameAttribute(NameOID.COUNTRY_NAME, "VN"),
-    x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "TP. Ho Chi Minh"),
+subject = x509.Name([
+    x509.NameAttribute(NameOID.COMMON_NAME, "Hồ Thị Thu Phượng"),
     x509.NameAttribute(NameOID.LOCALITY_NAME, ""),
-    x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Cong ty L&A"),
-    x509.NameAttribute(NameOID.COMMON_NAME, "l-a.com.vn"),
+    x509.NameAttribute(NameOID.ORGANIZATION_NAME, "CÔNG TY CỔ PHẦN L&A"),
+    x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "THÀNH PHỐ HỒ CHÍ MINH"),
+    x509.NameAttribute(NameOID.COUNTRY_NAME, "VN"),
+
+    x509.NameAttribute(NameOID.TITLE, "Giám đốc nhân sự"),
+    x509.NameAttribute(NameOID.EMAIL_ADDRESS, "phuong.ho@l-a.com.vn"),
+    x509.NameAttribute(NameOID.USER_ID, "CCCD:025572179"),
+])
+
+issuer = x509.Name([
+    x509.NameAttribute(NameOID.COMMON_NAME, "FPT Certification Authority SHA256"),
+    x509.NameAttribute(NameOID.LOCALITY_NAME, ""),
+    x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, "FPT Information System"),
+    x509.NameAttribute(NameOID.ORGANIZATION_NAME, "FPT Corporation"),
+    x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "Hà Nội"),
+    x509.NameAttribute(NameOID.COUNTRY_NAME, "VN"),
 ])
 
 cert = x509.CertificateBuilder().subject_name(
@@ -42,14 +56,14 @@ cert = x509.CertificateBuilder().subject_name(
 private_key_pem = private_key.private_bytes(
     encoding=serialization.Encoding.PEM,
     format=serialization.PrivateFormat.PKCS8,
-    encryption_algorithm=serialization.NoEncryption()
+    encryption_algorithm=serialization.NoEncryption(),
 )
 
 cert_pem = cert.public_bytes(encoding=serialization.Encoding.PEM)
 
 # Ghi khóa riêng tư và chứng chỉ số vào file
-private_key_path = "./cert/private_key.pem"
-cert_path = "./cert/certificate.pem"
+private_key_path = CONST.PRIVATE_KEY_PATH
+cert_path = CONST.CERT_PATH
 
 with open(private_key_path, "wb") as private_key_file:
     private_key_file.write(private_key_pem)
