@@ -18,24 +18,24 @@ private_key = rsa.generate_private_key(
 
 # Tạo một chứng chỉ số self-signed
 subject = x509.Name([
-    x509.NameAttribute(NameOID.COMMON_NAME, "Hồ Thị Thu Phượng"),
-    x509.NameAttribute(NameOID.LOCALITY_NAME, ""),
-    x509.NameAttribute(NameOID.ORGANIZATION_NAME, "CÔNG TY CỔ PHẦN L&A"),
-    x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "THÀNH PHỐ HỒ CHÍ MINH"),
-    x509.NameAttribute(NameOID.COUNTRY_NAME, "VN"),
+    x509.NameAttribute(NameOID.COMMON_NAME, 'Hồ Thị Thu Phượng'),
+    x509.NameAttribute(NameOID.LOCALITY_NAME, ''),
+    x509.NameAttribute(NameOID.ORGANIZATION_NAME, 'CÔNG TY CỔ PHẦN L&A'),
+    x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, 'THÀNH PHỐ HỒ CHÍ MINH'),
+    x509.NameAttribute(NameOID.COUNTRY_NAME, 'VN'),
 
-    x509.NameAttribute(NameOID.TITLE, "Giám đốc nhân sự"),
-    x509.NameAttribute(NameOID.EMAIL_ADDRESS, "phuong.ho@l-a.com.vn"),
-    x509.NameAttribute(NameOID.USER_ID, "CCCD:025572179"),
+    x509.NameAttribute(NameOID.TITLE, 'Giám đốc nhân sự'),
+    x509.NameAttribute(NameOID.EMAIL_ADDRESS, 'phuong.ho@l-a.com.vn'),
+    x509.NameAttribute(NameOID.USER_ID, 'CCCD:025572179'),
 ])
 
 issuer = x509.Name([
-    x509.NameAttribute(NameOID.COMMON_NAME, "FPT Certification Authority SHA256"),
-    x509.NameAttribute(NameOID.LOCALITY_NAME, ""),
-    x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, "FPT Information System"),
-    x509.NameAttribute(NameOID.ORGANIZATION_NAME, "FPT Corporation"),
-    x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "Hà Nội"),
-    x509.NameAttribute(NameOID.COUNTRY_NAME, "VN"),
+    x509.NameAttribute(NameOID.COMMON_NAME, 'FPT Certification Authority SHA256'),
+    x509.NameAttribute(NameOID.LOCALITY_NAME, ''),
+    x509.NameAttribute(NameOID.ORGANIZATIONAL_UNIT_NAME, 'FPT Information System'),
+    x509.NameAttribute(NameOID.ORGANIZATION_NAME, 'FPT Corporation'),
+    x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, 'Hà Nội'),
+    x509.NameAttribute(NameOID.COUNTRY_NAME, 'VN'),
 ])
 
 cert = x509.CertificateBuilder().subject_name(
@@ -65,8 +65,8 @@ cert_pem = cert.public_bytes(encoding=serialization.Encoding.PEM)
 private_key_path = CONST.PRIVATE_KEY_PATH
 cert_path = CONST.CERT_PATH
 
-with open(private_key_path, "wb") as private_key_file:
+with open(private_key_path, 'wb') as private_key_file:
     private_key_file.write(private_key_pem)
 
-with open(cert_path, "wb") as cert_file:
+with open(cert_path, 'wb') as cert_file:
     cert_file.write(cert_pem)
