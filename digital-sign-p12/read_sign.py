@@ -2,7 +2,7 @@
 from cryptography.hazmat import backends
 from cryptography.hazmat.primitives.serialization import pkcs12
 
-with open('./container.p12', 'rb') as f:
+with open('./cert/container.p12', 'rb') as f:
     sign_data = f.read()
 
 p12 = pkcs12.load_key_and_certificates(
