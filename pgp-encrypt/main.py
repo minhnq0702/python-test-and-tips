@@ -39,25 +39,25 @@ def get_exists_key():
 pri, pub = get_exists_key()
 
 
-# origin_msg = None
-# with open('./new.csv', 'rb') as f:
-#     msg = pgpy.PGPMessage.new(f.read())
-#     encrypt_res = str(pub.encrypt(msg))
-#
-# with open('./encrypted.csv', 'w') as f:
-#     f.write(encrypt_res)
+origin_msg = None
+with open('./NACK_TMP111981_10001776_0000390903_MD_04092023_CHECK-ACCOUNT-202309001_434.csv', 'rb') as f:
+    msg = pgpy.PGPMessage.new(f.read())
+    encrypt_res = str(pub.encrypt(msg))
 
-with open('./ACK_TMP111981_10001746_0000000087_MD_22062023_TESTVCB15_19.encrypt', 'rb') as f, open('./ACK_TMP111981_10001746_0000000087_MD_22062023_TESTVCB15_19.csv', 'w') as e:
-    to_decrypt = pgpy.PGPMessage.from_blob(f.read())
-    with pri.unlock("Vcb#La@***2023"):
-        msg = pri.decrypt(to_decrypt)
-        write_msg = msg.message
-        print(write_msg)
-        if isinstance(write_msg, (bytes, bytearray)):
-            write_msg = write_msg.decode('utf-8')
-        # if isinstance(write_msg, str):
-        #     write_msg = write_msg.encode('utf-8')
-        e.write(write_msg)
+with open('./encrypted.csv', 'w') as f:
+    f.write(encrypt_res)
+
+# with open('./ACK_TMP111981_10001746_0000000087_MD_22062023_TESTVCB15_19.encrypt', 'rb') as f, open('./ACK_TMP111981_10001746_0000000087_MD_22062023_TESTVCB15_19.csv', 'w') as e:
+#     to_decrypt = pgpy.PGPMessage.from_blob(f.read())
+#     with pri.unlock("Vcb#La@***2023"):
+#         msg = pri.decrypt(to_decrypt)
+#         write_msg = msg.message
+#         print(write_msg)
+#         if isinstance(write_msg, (bytes, bytearray)):
+#             write_msg = write_msg.decode('utf-8')
+#         # if isinstance(write_msg, str):
+#         #     write_msg = write_msg.encode('utf-8')
+#         e.write(write_msg)
 
 
 
