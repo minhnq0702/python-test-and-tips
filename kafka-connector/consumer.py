@@ -3,38 +3,51 @@ import time
 
 from kafka import KafkaConsumer
 from kafka.errors import NoBrokersAvailable, KafkaError
+from kafka.structs import OffsetAndMetadata
 
 
 class ConsumerManager:
     consumer: KafkaConsumer = None
-    topic_name = None
+    bootstrap_servers = None
+    topics = None
+    auto_offset_reset = 'earliest'
+    enable_auto_commit = True
+    commit_after_records = 0
+    group = None
 
-    # create singleton consumer
     def __new__(cls, **kwargs):
-        if not hasattr(cls, 'instance'):
-            cls.instance = super(ConsumerManager, cls).__new__(cls)
-            try:
-                cls.instance.consumer = KafkaConsumer(
-                    *kwargs.get('topic_name', []),
-                    bootstrap_servers=kwargs['bootstrap_servers'],
-                    sasl_mechanism=kwargs.get('sasl_mechanism', None),
-                    security_protocol=kwargs.get('security_protocol', None),
-                    sasl_plain_username=kwargs.get('sasl_plain_username', None),
-                    sasl_plain_password=kwargs.get('sasl_plain_password', None),
+        instance = super(ConsumerManager, cls).__new__(cls)
+        instance.bootstrap_servers = kwargs['bootstrap_servers']
+        instance.topics = kwargs['topics']  # change to .get later
+        instance.auto_offset_reset = kwargs.get('auto_offset_reset', 'earliest')
+        instance.enable_auto_commit = kwargs.get('enable_auto_commit', True)
+        instance.commit_after_records = kwargs.get('commit_after_records', 0)
+        instance.group = kwargs.get('group_id', None)
 
-                    # other options
-                    group_id=kwargs.get('group_id', None),
-                    # client_id=f'{_getRandomID}',
-                    # auto_offset_reset='earliest',
-                    enable_auto_commit=True,
-                    # max_poll_interval_ms=300000,  # * default value
-                    # session_timeout_ms=50000,
-                )
-            except NoBrokersAvailable as e:
-                print(e)
-            except KafkaError as e:
-                print(e)
-        return cls.instance
+        try:
+            instance.consumer = KafkaConsumer(
+                *instance.topics,
+                bootstrap_servers=instance.bootstrap_servers,
+                sasl_mechanism=kwargs.get('sasl_mechanism', None),
+                security_protocol=kwargs.get('security_protocol', None),
+                sasl_plain_username=kwargs.get('sasl_plain_username', None),
+                sasl_plain_password=kwargs.get('sasl_plain_password', None),
+
+                # other options
+                group_id=instance.group,
+                auto_offset_reset=instance.auto_offset_reset,
+                enable_auto_commit=instance.enable_auto_commit,
+                # max_poll_interval_ms=300000,  # * default value
+                # session_timeout_ms=50000,
+                # client_id=f'{_getRandomID}',
+                default_offset_commit_callback=lambda x: print(f'====> Offset commit: {x}'),
+            )
+        except NoBrokersAvailable as e:
+            print(e)
+        except KafkaError as e:
+            print(e)
+        else:
+            return instance
 
     def consume_message(self, delay_time: float = 1, num_of_record: int = 1):
         """
@@ -44,6 +57,7 @@ class ConsumerManager:
         :return:
         """
         try:
+            read_records = 0
             while True:
                 print('===> Start consuming message....')
                 poll_msg = self.consumer.poll(
@@ -57,6 +71,12 @@ class ConsumerManager:
                             key = m.key and m.key.decode('utf-8') or ''
                             val = m.value and m.value.decode('utf-8') or ''
                             print(f'==> [Consumed Value]: {key} - {val} / at {m.offset}')
+                            read_records += 1
+
+                        # * commit offset
+                        if not self.enable_auto_commit and self.commit_after_records > 0 and divmod(read_records, self.commit_after_records)[1] == 0:
+                            print('doing commit....', read_records)
+                            self.manual_commit_offset(top_partition)
 
                 # * delay
                 if delay_time > 0:
@@ -67,6 +87,12 @@ class ConsumerManager:
             print('Error: ', e)
         finally:
             pass
+
+    def manual_commit_offset(self, topic_partition):
+        pos = self.consumer.position(topic_partition)
+        self.consumer.commit({
+            topic_partition: OffsetAndMetadata(pos, time.time())
+        })
 
     def close(self):
         if self.consumer is not None:

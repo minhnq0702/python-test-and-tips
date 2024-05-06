@@ -62,9 +62,17 @@ def get_consumer_inputs(func):
     # ! use decorator here just for  fun ^_^
     @functools.wraps(func)
     def get_input(*args, **kwargs):
-        num_of_msg = input('Enter the number of messages you want to consume: ')
-        delay_time = input('Enter the delay time between each poll action: ')
-        return func(args[0],   float(delay_time), int(num_of_msg), *args[1:], **kwargs)
+        num_of_msg = None
+        while not num_of_msg or not num_of_msg.isnumeric():
+            num_of_msg = input('Enter the number of messages you want to consume: ')
+
+        delay_time = None
+        while not delay_time or not delay_time.isnumeric():
+            delay_time = input('Enter the delay time between each poll action: ')
+
+        kwargs['num_of_msg'] = int(num_of_msg)
+        kwargs['delay_time'] = float(delay_time)
+        return func(*args, **kwargs)
     return get_input
 
 
@@ -82,7 +90,7 @@ def do_produce(producer: ProducerManager, num_of_msg=1, *args, **kwargs):
 
 
 @get_consumer_inputs
-def do_consume(consumer: ConsumerManager, delay_time: float = 1.0, num_of_record: int = 1, **kwargs):
+def do_consume(consumer: ConsumerManager, delay_time: float = 1.0, num_of_record: int = 1, *args, **kwargs):
     """
     This function will simulate the consumer
     :param consumer:
@@ -108,13 +116,29 @@ if __name__ == '__main__':
             )
             do_produce(prod)
         elif choice == '2':
+            auto_commit = None
+            while auto_commit not in ['y', 'n']:
+                auto_commit = input('Do you want to auto commit the offset? (y/n): ').lower()
+
+            commit_after_records = None
+            if auto_commit == 'n':
+                while not commit_after_records or not commit_after_records.isnumeric():
+                    commit_after_records = input('Enter the number of records to commit the offset: ')
+
+            auto_offset_reset = None
+            while auto_offset_reset not in ['earliest', 'latest', 'none']:
+                auto_offset_reset = input('Enter the auto offset reset (earliest/latest/none): ')
+
             cons = get_consumer(
-                topic_name=[KAFKA_TOPIC],
+                topics=[KAFKA_TOPIC],
                 bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
                 sasl_mechanism=SASL_MECHANISM,
                 security_protocol=SECURITY_PROTOCOL,
                 sasl_plain_username=SASL_PLAIN_USERNAME,
                 sasl_plain_password=SASL_PLAIN_PASSWORD,
+                auto_offset_reset=auto_offset_reset,
+                enable_auto_commit=True if auto_commit == 'y' else False,
+                commit_after_records=int(commit_after_records) if commit_after_records else 0,
                 group_id=KAFKA_CONSUMER_GROUP,
             )
             do_consume(cons)
