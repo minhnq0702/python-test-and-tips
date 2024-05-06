@@ -30,7 +30,6 @@ class ProducerManager:
     def close(self):
         if self.producer is not None:
             self.producer.close()
-            print('Closed producer')
 
     def __del__(self):
         self.close()

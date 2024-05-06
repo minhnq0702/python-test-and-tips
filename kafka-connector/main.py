@@ -54,12 +54,22 @@ def get_producer_inputs(func):
     @functools.wraps(func)
     def get_input(*args, **kwargs):
         num_of_msg = input('Enter the number of messages you want to send: ')
-        return func(*args, int(num_of_msg), **kwargs)
+        return func(args[0], int(num_of_msg), *args[1:], **kwargs)
+    return get_input
+
+
+def get_consumer_inputs(func):
+    # ! use decorator here just for  fun ^_^
+    @functools.wraps(func)
+    def get_input(*args, **kwargs):
+        num_of_msg = input('Enter the number of messages you want to consume: ')
+        delay_time = input('Enter the delay time between each poll action: ')
+        return func(args[0],   float(delay_time), int(num_of_msg), *args[1:], **kwargs)
     return get_input
 
 
 @get_producer_inputs
-def do_producer(producer: ProducerManager, num_of_msg=1, *args, **kwargs):
+def do_produce(producer: ProducerManager, num_of_msg=1, *args, **kwargs):
     """
     This function will simulate the producer
     :param ProducerManager producer:
@@ -71,28 +81,45 @@ def do_producer(producer: ProducerManager, num_of_msg=1, *args, **kwargs):
         producer.send_message(KAFKA_TOPIC, data)
 
 
+@get_consumer_inputs
+def do_consume(consumer: ConsumerManager, delay_time: float = 1.0, num_of_record: int = 1, **kwargs):
+    """
+    This function will simulate the consumer
+    :param consumer:
+    :param delay_time:
+    :param num_of_record:
+    :param kwargs:
+    :return:
+    """
+    consumer.consume_message(delay_time, num_of_record)
+
+
 if __name__ == '__main__':
     load_env()
     choice = choose_type()
-    if choice == '1':
-        prod = get_producer(
-            bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
-            sasl_mechanism=SASL_MECHANISM,
-            security_protocol=SECURITY_PROTOCOL,
-            sasl_plain_username=SASL_PLAIN_USERNAME,
-            sasl_plain_password=SASL_PLAIN_PASSWORD
-        )
-        do_producer(prod)
-    elif choice == '2':
-        cons = get_consumer(
-            topic_name=[KAFKA_TOPIC],
-            bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
-            sasl_mechanism=SASL_MECHANISM,
-            security_protocol=SECURITY_PROTOCOL,
-            sasl_plain_username=SASL_PLAIN_USERNAME,
-            sasl_plain_password=SASL_PLAIN_PASSWORD,
-            group_id=KAFKA_CONSUMER_GROUP,
-        )
-        cons.consume_message()
-    else:
-        print("Invalid choice")
+    try:
+        if choice == '1':
+            prod = get_producer(
+                bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
+                sasl_mechanism=SASL_MECHANISM,
+                security_protocol=SECURITY_PROTOCOL,
+                sasl_plain_username=SASL_PLAIN_USERNAME,
+                sasl_plain_password=SASL_PLAIN_PASSWORD
+            )
+            do_produce(prod)
+        elif choice == '2':
+            cons = get_consumer(
+                topic_name=[KAFKA_TOPIC],
+                bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
+                sasl_mechanism=SASL_MECHANISM,
+                security_protocol=SECURITY_PROTOCOL,
+                sasl_plain_username=SASL_PLAIN_USERNAME,
+                sasl_plain_password=SASL_PLAIN_PASSWORD,
+                group_id=KAFKA_CONSUMER_GROUP,
+            )
+            do_consume(cons)
+        else:
+            print("Invalid choice")
+    except KeyboardInterrupt:
+        print('Exiting....')
+        exit(0)
