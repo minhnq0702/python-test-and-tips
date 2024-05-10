@@ -44,8 +44,10 @@ class ConsumerManager:
             )
         except NoBrokersAvailable as e:
             print(e)
+            return None
         except KafkaError as e:
             print(e)
+            return None
         else:
             return instance
 

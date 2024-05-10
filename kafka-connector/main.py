@@ -62,15 +62,15 @@ def get_consumer_inputs(func):
     # ! use decorator here just for  fun ^_^
     @functools.wraps(func)
     def get_input(*args, **kwargs):
-        num_of_msg = None
-        while not num_of_msg or not num_of_msg.isnumeric():
-            num_of_msg = input('Enter the number of messages you want to consume: ')
+        num_of_record = None
+        while not num_of_record or not num_of_record.isnumeric():
+            num_of_record = input('Enter the number of messages you want to consume: ')
 
         delay_time = None
         while not delay_time or not delay_time.isnumeric():
             delay_time = input('Enter the delay time between each poll action: ')
 
-        kwargs['num_of_msg'] = int(num_of_msg)
+        kwargs['num_of_record'] = int(num_of_record)
         kwargs['delay_time'] = float(delay_time)
         return func(*args, **kwargs)
     return get_input
@@ -129,18 +129,23 @@ if __name__ == '__main__':
             while auto_offset_reset not in ['earliest', 'latest', 'none']:
                 auto_offset_reset = input('Enter the auto offset reset (earliest/latest/none): ')
 
-            cons = get_consumer(
-                topics=[KAFKA_TOPIC],
-                bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
-                sasl_mechanism=SASL_MECHANISM,
-                security_protocol=SECURITY_PROTOCOL,
-                sasl_plain_username=SASL_PLAIN_USERNAME,
-                sasl_plain_password=SASL_PLAIN_PASSWORD,
-                auto_offset_reset=auto_offset_reset,
-                enable_auto_commit=True if auto_commit == 'y' else False,
-                commit_after_records=int(commit_after_records) if commit_after_records else 0,
-                group_id=KAFKA_CONSUMER_GROUP,
-            )
+            cons = None
+            while cons is None:
+                cons = get_consumer(
+                    topics=[KAFKA_TOPIC],
+                    bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
+                    sasl_mechanism=SASL_MECHANISM,
+                    security_protocol=SECURITY_PROTOCOL,
+                    sasl_plain_username=SASL_PLAIN_USERNAME,
+                    sasl_plain_password=SASL_PLAIN_PASSWORD,
+                    auto_offset_reset=auto_offset_reset,
+                    enable_auto_commit=True if auto_commit == 'y' else False,
+                    commit_after_records=int(commit_after_records) if commit_after_records else 0,
+                    group_id=KAFKA_CONSUMER_GROUP,
+                )
+                if cons is None:
+                    input('Init consumer failed. Press any key to retry...')
+
             do_consume(cons)
         else:
             print("Invalid choice")
