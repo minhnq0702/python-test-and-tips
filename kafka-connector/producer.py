@@ -21,17 +21,21 @@ class ProducerManager:
     def send_message(self, topic_name: str, message: str):
         try:
             self.producer.send(topic_name, message.encode('utf-8'))
-            self.producer.flush()
+            # self.producer.flush()
         except Exception as e:
             print('Error: ', e)
         finally:
             pass
+
+    def done(self):
+        self.producer.flush()
 
     def close(self):
         if self.producer is not None:
             self.producer.close()
 
     def __del__(self):
+        print('Closing producer...')
         self.close()
 
 

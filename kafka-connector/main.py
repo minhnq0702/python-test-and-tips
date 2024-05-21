@@ -2,6 +2,7 @@
 import os
 from dotenv import load_dotenv
 import functools
+from datetime import datetime
 
 from producer import get_producer, ProducerManager
 from consumer import get_consumer, ConsumerManager
@@ -84,9 +85,11 @@ def do_produce(producer: ProducerManager, num_of_msg=1, *args, **kwargs):
     :param num_of_msg:
     :return:
     """
-    for _ in range(num_of_msg):
+    for i in range(num_of_msg):
         data = generate_data()
+        print(f'{datetime.utcnow()}: ====> PRODUCING MESSAGE.....', i + 1)
         producer.send_message(KAFKA_TOPIC, data)
+    producer.done()
 
 
 @get_consumer_inputs
