@@ -1,6 +1,6 @@
-# python-tools
+# python-test-and-tips
 
-### This is a collection of python tools that I have created for my personal purposes (absolutely, for software development 😆).
+### This is a collection of python tools (also be a collection of trash and test) that I have created for my personal purposes (absolutely, for software development 😆).
 
 ### The tools are:
 - **[Make Checksum](checksum/main.py)**: A tool to organize files in a directory.
