@@ -21,7 +21,7 @@ def create_client():
 client = create_client()
 
 
-def send_sms_normal(_client, to_number, from_number, body):
+def send_sms_normal(_client: Client, to_number, from_number, body):
     message = _client.messages.create(
         body=body,
         from_=from_number,
@@ -30,7 +30,7 @@ def send_sms_normal(_client, to_number, from_number, body):
     print(f'SMS sent successfully, message SID: {message.sid}')
 
 
-def send_sms_fire_and_forget(_client, to_number, from_number, body, _callback, _index):
+def send_sms_fire_and_forget(_client: Client, to_number, from_number, body, _callback, _index):
     def _send_sms():
         start = time.time()
         message = _client.messages.create(
