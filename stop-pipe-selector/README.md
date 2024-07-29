@@ -1,0 +1,1 @@
+Create another process and communite child process with parent process through os.pipe
