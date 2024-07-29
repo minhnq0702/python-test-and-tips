@@ -26,7 +26,7 @@ def generate_data():
         'created_at': fake.date_time_this_century().isoformat(),
         'updated_at': fake.date_time_this_century().isoformat(),
     }
-    return json.dumps(data, ensure_ascii=False)
+    return data
 
 
 if __name__ == '__main__':

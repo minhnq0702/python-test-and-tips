@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
-import os
-from dotenv import load_dotenv
 import functools
+import json
+import os
 from datetime import datetime
 
-from producer import get_producer, ProducerManager
-from consumer import get_consumer, ConsumerManager
+from consumer import ConsumerManager, get_consumer
+from dotenv import load_dotenv
 from fake import generate_data
-
+from producer import ProducerManager, get_producer
 
 KAFKA_BOOTSTRAP_SERVERS = None
-KAFKA_TOPIC = None
+KAFKA_TOPIC: str | None = None
 KAFKA_CONSUMER_GROUP = None
 SASL_MECHANISM = None
 SECURITY_PROTOCOL = None
@@ -86,9 +86,16 @@ def do_produce(producer: ProducerManager, num_of_msg=1, *args, **kwargs):
     :return:
     """
     for i in range(num_of_msg):
-        data = generate_data()
-        print(f'{datetime.utcnow()}: ====> PRODUCING MESSAGE.....', i + 1)
-        producer.send_message(KAFKA_TOPIC, data)
+        # data = generate_data()
+        data = json.dumps({
+            'model': 'hr.employee',
+            'func': 'create',
+            'args': [],
+            'kwargs': generate_data(),
+        },  ensure_ascii=False)
+        print(f'{datetime.now()}: ====> PRODUCING MESSAGE.....', i + 1)
+        if KAFKA_TOPIC:
+            producer.send_message(KAFKA_TOPIC, data)
     producer.done()
 
 
