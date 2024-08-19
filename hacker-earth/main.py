@@ -1,13 +1,18 @@
 """Hacker Earth Test"""
 import time
 
-from easy.equal_string import equal_strings
-from easy.mex import find_mex
-from easy.palindromic_string import palidromic_string
+# pylint: disable=E0401,W0611
+from level_easy.mex import find_mex
+from level_easy.palindromic_string import palidromic_string
+from level_medium.equal_string import equal_strings
+
+# pylint: disable=W0611
 
 if __name__ == "__main__":
     start = time.time()
-    palidromic_string()
+
+    # palidromic_string()
     # find_mex()
-    # equal_strings()
+    equal_strings()
+
     print("===>", time.time() - start)
