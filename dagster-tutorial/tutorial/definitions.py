@@ -4,7 +4,8 @@ from dagster import (
     DefaultScheduleStatus,
     load_assets_from_modules,
     define_asset_job,
-    AssetSelection
+    AssetSelection,
+    EnvVar,
 )
 
 from . import assets
@@ -21,7 +22,7 @@ hackernews_to_words_schedule = ScheduleDefinition(
 )
 
 datagen = resources.DataGeneratorResource(
-    num_days=365,
+    num_days=EnvVar.int("HACKERNEWS_NUM_DAYS_WINDOW"),
 )  # make the resource
 
 defs = Definitions(
