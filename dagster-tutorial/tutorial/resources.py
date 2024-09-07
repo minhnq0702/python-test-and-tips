@@ -5,7 +5,7 @@ from typing import Sequence, Union
 
 from dagster import ConfigurableResource
 from faker import Faker
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 # This file holds a resource you'll use in the tutorial
 # You won't need to use this file/class until the Connecting to External Services section of the tutorial (Part 8).
@@ -156,7 +156,7 @@ class DataGeneratorResource(ConfigurableResource):
     def generator(self) -> DataGenerator:
         return DataGenerator(self.seed)
 
-    def get_signups(self):
+    def get_signups(self) -> list[Signup]:
         result = []
         today = datetime.now()
 

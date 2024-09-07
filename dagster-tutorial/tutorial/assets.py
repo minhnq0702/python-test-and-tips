@@ -14,6 +14,7 @@ import aiohttp
 
 import requests
 from dagster import asset, AssetExecutionContext, MaterializeResult, MetadataValue
+from . import resources
 
 
 @asset(description="Collect hackernews topstory ids")
@@ -117,5 +118,20 @@ def asset_most_frequent_words(context: AssetExecutionContext) -> MaterializeResu
     return MaterializeResult(
         metadata={
             "plot": MetadataValue.md(img_md_data),
+        }
+    )
+
+@asset
+def asset_signup(hackernews_api: resources.DataGeneratorResource) -> MaterializeResult:
+    signups_raw = hackernews_api.get_signups()
+    df = pd.DataFrame(signups_raw)
+    df.to_csv("data/signups.csv")
+    return MaterializeResult(
+        metadata={
+            "Record Count": len(signups_raw),
+            "Preview": MetadataValue.md(df.head(10).to_markdown()),
+            # "Preview": MetadataValue.table(df.head(10).values.tolist()),
+            "Earliest Signup": df["registered_at"].min(),
+            "Latest Signup": df["registered_at"].max(),
         }
     )
