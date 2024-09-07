@@ -17,6 +17,42 @@ from dagster import asset, AssetExecutionContext, MaterializeResult, MetadataVal
 from . import resources
 
 
+async def fetch_one_story(client, url, sem) -> typing.Awaitable[dict]:
+    """
+
+    Args:
+        client (aiohttp.Client.ClientSession):
+        url (str):
+        sem (asyncio.Semaphore):
+    Returns:
+
+    """
+    async with sem:
+        async with client.get(url) as resp:
+            story_json = await resp.json()
+    return story_json
+
+
+async def fetch_stories(context: AssetExecutionContext, story_ids):
+    def new_async_client():
+        return aiohttp.ClientSession()
+
+    story_url = "https://hacker-news.firebaseio.com/v0/item/{item_id}.json"
+    awaitable_stories = []
+    start_time = time.time()
+    sem = asyncio.Semaphore(10)
+    async with new_async_client() as client:
+        async with asyncio.TaskGroup() as tg:
+            for story_id in story_ids:
+                awaitable_stories.append(tg.create_task(
+                    fetch_one_story(client, story_url.format(item_id=story_id), sem),
+                ))
+    await client.close()
+    res = await asyncio.gather(*awaitable_stories)
+    context.log.info(f"done within {time.time() - start_time}")
+    return res
+
+
 @asset(description="Collect hackernews topstory ids")
 def asset_top_story_ids() -> None:
     hackernews_topstories_url = "https://hacker-news.firebaseio.com/v0/topstories.json"
@@ -31,47 +67,12 @@ def asset_top_story_ids() -> None:
         json.dump(topstories, f)
 
 
-async def fetch_one_story(client: typing.Annotated[aiohttp.client.ClientSession, ""], url) -> typing.Awaitable[dict]:
-    """
-
-    Args:
-        client: aiohttp.Client.ClientSession
-        url:
-
-    Returns:
-
-    """
-    async with client.get(url) as resp:
-        story_json = await resp.json()
-    return story_json
-
-
-async def fetch_stories(context: AssetExecutionContext, story_ids):
-    def new_async_client():
-        return aiohttp.ClientSession()
-
-    story_url = "https://hacker-news.firebaseio.com/v0/item/{item_id}.json"
-    awaitable_stories = []
-    start_time = time.time()
-    async with new_async_client() as client:
-        async with asyncio.TaskGroup() as tg:
-            for story_id in story_ids:
-                awaitable_stories.append(tg.create_task(
-                    fetch_one_story(client, story_url.format(item_id=story_id)),
-                ))
-    await client.close()
-    res = await asyncio.gather(*awaitable_stories)
-    context.log.info(f"done at {time.time() - start_time}")
-    return res
-
-
 @asset(deps=[asset_top_story_ids], description="Fetch top stories by ID")
 def asset_top_stories(context: AssetExecutionContext) -> MaterializeResult:
     with open("data/topstory_ids.json") as f:
         story_ids: list[int] = json.load(f)
 
-
-    result =  asyncio.run(fetch_stories(context, story_ids))
+    result = asyncio.run(fetch_stories(context, story_ids))
     # result = []
     # story_url = "https://hacker-news.firebaseio.com/v0/item/{item_id}.json"
     # for story_id in story_ids:
@@ -107,7 +108,7 @@ def asset_most_frequent_words(context: AssetExecutionContext) -> MaterializeResu
 
     plt.figure(figsize=(10, 6))
     plt.bar(list(top_words.keys()), list(top_words.values()))
-    plt.xticks(rotation=45, ha="right") # * rotate x-axis label 45 degrees
+    plt.xticks(rotation=45, ha="right")  # * rotate x-axis label 45 degrees
     plt.title("Top 25 words in Hacker News titles")
     plt.tight_layout()
     buff = BytesIO()
@@ -120,6 +121,7 @@ def asset_most_frequent_words(context: AssetExecutionContext) -> MaterializeResu
             "plot": MetadataValue.md(img_md_data),
         }
     )
+
 
 @asset
 def asset_signup(hackernews_api: resources.DataGeneratorResource) -> MaterializeResult:

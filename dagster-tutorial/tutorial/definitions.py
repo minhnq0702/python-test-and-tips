@@ -18,7 +18,7 @@ hackernews_top_words_job = define_asset_job("job_hacknews_top_words", selection=
 hackernews_to_words_schedule = ScheduleDefinition(
     job=hackernews_top_words_job,
     cron_schedule="*/1 * * * *",
-    default_status=DefaultScheduleStatus.RUNNING,
+    # default_status=DefaultScheduleStatus.RUNNING,
 )
 
 datagen = resources.DataGeneratorResource(
