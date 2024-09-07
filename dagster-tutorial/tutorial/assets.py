@@ -1,10 +1,12 @@
 # -*- encoding: utf-8 -*-
 import json
+import base64
+from io import BytesIO
 from collections import Counter
 import time
 import typing
 import os
-from importlib.metadata import metadata
+import matplotlib.pyplot as plt
 
 import pandas as pd
 import asyncio
@@ -87,18 +89,33 @@ def asset_top_stories(context: AssetExecutionContext) -> MaterializeResult:
 
 
 @asset(deps=[asset_top_stories], description="Get frequency words")
-def asset_most_frequent_words(context: AssetExecutionContext) -> None:
+def asset_most_frequent_words(context: AssetExecutionContext) -> MaterializeResult:
     stopwords = ["a", "the", "an", "of", "to", "in", "for", "and", "with", "on", "is"]
     top_stories: pd.DataFrame = pd.read_csv('data/topstories.csv')
     work_count = {}
     for raw_title in top_stories['title']:
         title = raw_title.lower()
         for word in title.split():
-            clean_word = word.strip(".,-!?:;()[]'\"-")
+            clean_word = word.strip(".,–!?:;()[]'\"-")
             if clean_word and clean_word not in stopwords:
                 work_count[clean_word] = work_count.get(clean_word, 0) + 1
     context.log.debug(f"Total work counter {json.dumps(work_count, indent=4)}")
-    top_common = dict(Counter(work_count).most_common(25))
+    top_words: dict[str, int] = dict(Counter(work_count).most_common(25))
     with open("data/most_frequent_words.json", "w") as f:
-        json.dump(top_common, f, ensure_ascii=False)
-    return None
+        json.dump(top_words, f, ensure_ascii=False)
+
+    plt.figure(figsize=(10, 6))
+    plt.bar(list(top_words.keys()), list(top_words.values()))
+    plt.xticks(rotation=45, ha="right") # * rotate x-axis label 45 degrees
+    plt.title("Top 25 words in Hacker News titles")
+    plt.tight_layout()
+    buff = BytesIO()
+    plt.savefig(buff, format="png")
+    img_data = base64.b64encode(buff.getvalue())
+    img_md_data = f"![img](data:image/png;base64,{img_data.decode()})"
+
+    return MaterializeResult(
+        metadata={
+            "plot": MetadataValue.md(img_md_data),
+        }
+    )
