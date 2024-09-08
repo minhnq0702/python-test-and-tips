@@ -1,0 +1,64 @@
+import requests
+import os
+
+from dagster import asset
+import duckdb
+
+from . import constants
+
+@asset(description="Taxi trip file data downloaded from NYC Open Data")
+def nyc_taxi_trips_file() -> None:
+    """
+    Trip file data downloaded from NYC OpenData
+    Returns:
+
+    """
+    report_month = "2023-10"
+    car_type = "yellow_tripdata"
+    url = "https://d37ci6vzurychx.cloudfront.net/trip-data/{car_type}_{report_month}.parquet"
+    resp = requests.get(url.format(car_type=car_type, report_month=report_month))
+    with open(constants.TAXI_TRIPS_TEMPLATE_FILE_PATH.format(report_month), "wb") as f:
+        f.write(resp.content)
+    resp.close()
+
+@asset(description="Taxi zone file downloaded from NYC Open Data")
+def nyc_taxi_zones_file() -> None:
+    """
+    Taxi zones downloaded from NYC Open data
+    Returns:
+
+    """
+    with requests.get("https://data.cityofnewyork.us/api/views/755u-8jsi/rows.csv?accessType=DOWNLOAD") as resp:
+        with open(constants.TAXI_ZONES_FILE_PATH, "wb") as f:
+            f.write(resp.content)
+
+
+@asset(
+    description="Tax trips database extracted from trip files",
+    deps=[nyc_taxi_trips_file]
+)
+def nyc_tax_trips() -> None:
+    """
+    The raw taxi trips dataset
+    Returns:
+
+    """
+    query = """
+        create or replace table trips as (
+            select
+            VendorID as vendor_id,
+            PULocationID as pickup_zone_id,
+            DOLocationID as dropoff_zone_id,
+            RatecodeID as rate_code_id,
+            payment_type as payment_type,
+            tpep_dropoff_datetime as dropoff_datetime,
+            tpep_pickup_datetime as pickup_datetime,
+            trip_distance as trip_distance,
+            passenger_count as passenger_count,
+            total_amount as total_amount
+          from 'data/raw/taxi_trips_2023-10.parquet'
+        );
+    """
+    conn = duckdb.connect(os.getenv(constants.ENV_DUCKDB_DATABASE))
+    conn.execute(query)
+    return None
