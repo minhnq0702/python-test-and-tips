@@ -77,14 +77,14 @@ def nyc_tax_trips() -> MaterializeResult:
 )
 def nyc_tax_zones() -> MaterializeResult:
     conn = duckdb.connect(os.getenv(constants.ENV_DUCKDB_DATABASE))
-    query = """
+    query = f"""
         create or replace table taxi_zones as (
             select 
                 LocationID as zone_id,
                 zone,
                 borough,
                 the_geom as geometry
-            from 'data/raw/taxi_zones.csv'
+            from '{constants.TAXI_ZONES_FILE_PATH}'
         );
     """
     conn.execute(query)
