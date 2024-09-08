@@ -1,3 +1,5 @@
+from datetime import date
+from dateutil.relativedelta import relativedelta
 import os
 import base64
 import duckdb
@@ -12,7 +14,7 @@ from dagster import asset, MaterializeResult, MetadataValue, AssetExecutionConte
 from . import constants
 
 
-@asset(deps=["nyc_tax_trips", "nyc_tax_zones"])
+@asset(deps=["nyc_taxi_trips", "nyc_taxi_zones"])
 def nyc_manhattan_stats() -> MaterializeResult:
     query = """
         select
@@ -70,5 +72,50 @@ def nyc_manhattan_map() -> MaterializeResult:
     return MaterializeResult(
         metadata={
             "Preview": MetadataValue.md(f"![Manhattan trips status](data:image/png;base64,{base64.b64encode(map_img_data).decode()})")
+        }
+    )
+
+
+@asset(deps=["nyc_taxi_trips"])
+def nyc_trips_by_week(context: AssetExecutionContext) -> MaterializeResult:
+    """
+    Get Trip by Week dataset
+    Returns:
+
+    """
+    query = """
+        select 
+            '{}' as period,
+            count(*) as num_trips,
+            sum(coalesce(passenger_count, 0)) as passenger_count,
+            sum(total_amount) as total_amount,
+            sum(trip_distance) as trip_distance 
+        from trips
+        where pickup_datetime >= '{}' and pickup_datetime <= '{}'
+        group by week(pickup_datetime)
+    """
+    conn = duckdb.connect(os.getenv(constants.ENV_DUCKDB_DATABASE))
+    report_month = 10
+    report_year = 2023
+    current_date = date(report_year, report_month, 1)
+    last_date = current_date + relativedelta(months=1, days=-1)
+
+    df = pd.DataFrame()
+
+    # shift current_date to fist date of week
+    current_date = current_date - relativedelta(days=current_date.weekday())
+    while current_date < last_date:
+        end_of_week = current_date + relativedelta(days=6)
+        week_trip = conn.execute(query.format(end_of_week, current_date, end_of_week)).fetchdf()
+        context.log.debug(week_trip)
+        df = pd.concat([df, week_trip])
+        current_date += relativedelta(days=7)
+    df["passenger_count"] = df["passenger_count"].astype(int)
+    df["total_amount"] = df["total_amount"].round(2).astype(float)
+    df["trip_distance"] = df["trip_distance"].round(2).astype(float)
+    df.to_csv(constants.TRIPS_BY_WEEK_FILE_PATH, index=False)
+    return MaterializeResult(
+        metadata={
+            "Preview": MetadataValue.md(df.to_markdown())
         }
     )

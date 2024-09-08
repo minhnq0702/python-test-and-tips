@@ -38,7 +38,7 @@ def nyc_taxi_zones_file() -> None:
     description="Tax trips database extracted from taxi trips file",
     deps=[nyc_taxi_trips_file],
 )
-def nyc_tax_trips() -> MaterializeResult:
+def nyc_taxi_trips() -> MaterializeResult:
     """
     The raw taxi trips dataset
     Returns:
@@ -76,7 +76,7 @@ def nyc_tax_trips() -> MaterializeResult:
     description="Tax zones database extracted from taxi zones file",
     deps=[nyc_taxi_zones_file],
 )
-def nyc_tax_zones() -> MaterializeResult:
+def nyc_taxi_zones() -> MaterializeResult:
     conn = duckdb.connect(os.getenv(constants.ENV_DUCKDB_DATABASE))
     query = f"""
         create or replace table zones as (
