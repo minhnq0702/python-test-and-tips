@@ -1,7 +1,7 @@
 import requests
 import os
 
-from dagster import asset
+from dagster import asset, MaterializeResult
 import duckdb
 
 from . import constants
@@ -34,10 +34,10 @@ def nyc_taxi_zones_file() -> None:
 
 
 @asset(
-    description="Tax trips database extracted from trip files",
-    deps=[nyc_taxi_trips_file]
+    description="Tax trips database extracted from taxi trips file",
+    deps=[nyc_taxi_trips_file],
 )
-def nyc_tax_trips() -> None:
+def nyc_tax_trips() -> MaterializeResult:
     """
     The raw taxi trips dataset
     Returns:
@@ -46,19 +46,53 @@ def nyc_tax_trips() -> None:
     query = """
         create or replace table trips as (
             select
-            VendorID as vendor_id,
-            PULocationID as pickup_zone_id,
-            DOLocationID as dropoff_zone_id,
-            RatecodeID as rate_code_id,
-            payment_type as payment_type,
-            tpep_dropoff_datetime as dropoff_datetime,
-            tpep_pickup_datetime as pickup_datetime,
-            trip_distance as trip_distance,
-            passenger_count as passenger_count,
-            total_amount as total_amount
-          from 'data/raw/taxi_trips_2023-10.parquet'
+                VendorID as vendor_id,
+                PULocationID as pickup_zone_id,
+                DOLocationID as dropoff_zone_id,
+                RatecodeID as rate_code_id,
+                payment_type as payment_type,
+                tpep_dropoff_datetime as dropoff_datetime,
+                tpep_pickup_datetime as pickup_datetime,
+                trip_distance as trip_distance,
+                passenger_count as passenger_count,
+                total_amount as total_amount
+            from 'data/raw/taxi_trips_2023-10.parquet'
         );
     """
     conn = duckdb.connect(os.getenv(constants.ENV_DUCKDB_DATABASE))
     conn.execute(query)
-    return None
+
+    # connect to verify created dataset
+    res = conn.execute("""select count(*) from trips""").fetchall()
+    return MaterializeResult(
+        metadata={
+            "Total Trips": res[0][0]
+        }
+    )
+
+
+@asset(
+    description="Tax zones database extracted from taxi zones file",
+    deps=[nyc_taxi_zones_file],
+)
+def nyc_tax_zones() -> MaterializeResult:
+    conn = duckdb.connect(os.getenv(constants.ENV_DUCKDB_DATABASE))
+    query = """
+        create or replace table taxi_zones as (
+            select 
+                LocationID as zone_id,
+                zone,
+                borough,
+                the_geom as geometry
+            from 'data/raw/taxi_zones.csv'
+        );
+    """
+    conn.execute(query)
+
+    # connect to verify create dataset
+    res = conn.execute("""select count(*) from taxi_zones""").fetchall()
+    return MaterializeResult(
+        metadata={
+            "Total Zones": res[0][0],
+        }
+    )
