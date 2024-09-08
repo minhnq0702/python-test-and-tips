@@ -1,8 +1,8 @@
 import requests
 import os
+import duckdb
 
 from dagster import asset, MaterializeResult
-import duckdb
 
 from . import constants
 
@@ -20,6 +20,7 @@ def nyc_taxi_trips_file() -> None:
     with open(constants.TAXI_TRIPS_TEMPLATE_FILE_PATH.format(report_month), "wb") as f:
         f.write(resp.content)
     resp.close()
+
 
 @asset(description="Taxi zone file downloaded from NYC Open Data")
 def nyc_taxi_zones_file() -> None:
@@ -78,7 +79,7 @@ def nyc_tax_trips() -> MaterializeResult:
 def nyc_tax_zones() -> MaterializeResult:
     conn = duckdb.connect(os.getenv(constants.ENV_DUCKDB_DATABASE))
     query = f"""
-        create or replace table taxi_zones as (
+        create or replace table zones as (
             select 
                 LocationID as zone_id,
                 zone,
@@ -90,7 +91,7 @@ def nyc_tax_zones() -> MaterializeResult:
     conn.execute(query)
 
     # connect to verify create dataset
-    res = conn.execute("""select count(*) from taxi_zones""").fetchall()
+    res = conn.execute("""select count(*) from zones""").fetchall()
     return MaterializeResult(
         metadata={
             "Total Zones": res[0][0],
