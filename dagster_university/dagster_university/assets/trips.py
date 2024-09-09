@@ -1,19 +1,24 @@
 import requests
 import os
 
-from dagster import asset, MaterializeResult
+from dagster import asset, MaterializeResult, AssetExecutionContext
 from dagster_duckdb import DuckDBResource
 
 from . import constants
+from ..partitions import monthly_partition
 
-@asset(description="Taxi trip file data downloaded from NYC Open Data")
-def nyc_taxi_trips_file() -> None:
+@asset(
+    description="Taxi trip file data downloaded from NYC Open Data",
+    partitions_def=monthly_partition,
+)
+def nyc_taxi_trips_file(context: AssetExecutionContext) -> None:
     """
     Trip file data downloaded from NYC OpenData
     Returns:
 
     """
-    report_month = "2023-10"
+    partition_date_str = context.partition_key
+    report_month = partition_date_str[:-3]
     car_type = "yellow_tripdata"
     url = "https://d37ci6vzurychx.cloudfront.net/trip-data/{car_type}_{report_month}.parquet"
     resp = requests.get(url.format(car_type=car_type, report_month=report_month))
