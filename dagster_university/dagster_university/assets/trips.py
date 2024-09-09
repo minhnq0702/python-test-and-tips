@@ -1,8 +1,8 @@
 import requests
 import os
-import duckdb
 
 from dagster import asset, MaterializeResult
+from dagster_duckdb import DuckDBResource
 
 from . import constants
 
@@ -38,9 +38,11 @@ def nyc_taxi_zones_file() -> None:
     description="Tax trips database extracted from taxi trips file",
     deps=[nyc_taxi_trips_file],
 )
-def nyc_taxi_trips() -> MaterializeResult:
+def nyc_taxi_trips(database: DuckDBResource) -> MaterializeResult:
     """
     The raw taxi trips dataset
+    Args:
+        database (DuckDBResource): DuckDB Resource to provide connection
     Returns:
 
     """
@@ -60,11 +62,13 @@ def nyc_taxi_trips() -> MaterializeResult:
             from 'data/raw/taxi_trips_2023-10.parquet'
         );
     """
-    conn = duckdb.connect(os.getenv(constants.ENV_DUCKDB_DATABASE))
-    conn.execute(query)
+    with database.get_connection() as conn:
+    # conn = duckdb.connect(os.getenv(constants.ENV_DUCKDB_DATABASE))
+        conn.execute(query)
 
-    # connect to verify created dataset
-    res = conn.execute("""select count(*) from trips""").fetchall()
+    with database.get_connection() as conn:
+        # connect to verify created dataset
+        res = conn.execute("""select count(*) from trips""").fetchall()
     return MaterializeResult(
         metadata={
             "Total Trips": res[0][0]
@@ -76,8 +80,7 @@ def nyc_taxi_trips() -> MaterializeResult:
     description="Tax zones database extracted from taxi zones file",
     deps=[nyc_taxi_zones_file],
 )
-def nyc_taxi_zones() -> MaterializeResult:
-    conn = duckdb.connect(os.getenv(constants.ENV_DUCKDB_DATABASE))
+def nyc_taxi_zones(database: DuckDBResource) -> MaterializeResult:
     query = f"""
         create or replace table zones as (
             select 
@@ -88,10 +91,12 @@ def nyc_taxi_zones() -> MaterializeResult:
             from '{constants.TAXI_ZONES_FILE_PATH}'
         );
     """
-    conn.execute(query)
+    with database.get_connection() as conn:
+        conn.execute(query)
 
-    # connect to verify create dataset
-    res = conn.execute("""select count(*) from zones""").fetchall()
+    with database.get_connection() as conn:
+        # connect to verify create dataset
+        res = conn.execute("""select count(*) from zones""").fetchall()
     return MaterializeResult(
         metadata={
             "Total Zones": res[0][0],

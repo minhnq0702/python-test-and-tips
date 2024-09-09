@@ -1,8 +1,6 @@
 from datetime import date
 from dateutil.relativedelta import relativedelta
-import os
 import base64
-import duckdb
 import pandas as pd
 import geopandas as gpd
 import plotly.express as px
@@ -10,12 +8,13 @@ import plotly.graph_objects
 import plotly.io as pio
 
 from dagster import asset, MaterializeResult, MetadataValue, AssetExecutionContext
+from dagster_duckdb import DuckDBResource
 
 from . import constants
 
 
 @asset(deps=["nyc_taxi_trips", "nyc_taxi_zones"])
-def nyc_manhattan_stats() -> MaterializeResult:
+def nyc_manhattan_stats(database: DuckDBResource) -> MaterializeResult:
     query = """
         select
             zones.zone,
@@ -27,8 +26,8 @@ def nyc_manhattan_stats() -> MaterializeResult:
         where borough = 'Manhattan' and geometry is not null
         group by zone, borough, geometry;
     """
-    conn = duckdb.connect(os.getenv(constants.ENV_DUCKDB_DATABASE))
-    zone_w_trip_count: pd.DataFrame  = conn.query(query).fetchdf()
+    with database.get_connection() as conn:
+        zone_w_trip_count: pd.DataFrame  = conn.query(query).fetchdf()
 
     # convert from geometry POLYGON dataobject to geopandas series
     zone_w_trip_count["geometry"] = gpd.GeoSeries.from_wkt(zone_w_trip_count["geometry"])
@@ -77,7 +76,7 @@ def nyc_manhattan_map() -> MaterializeResult:
 
 
 @asset(deps=["nyc_taxi_trips"])
-def nyc_trips_by_week(context: AssetExecutionContext) -> MaterializeResult:
+def nyc_trips_by_week(context: AssetExecutionContext, database: DuckDBResource) -> MaterializeResult:
     """
     Get Trip by Week dataset
     Returns:
@@ -94,7 +93,6 @@ def nyc_trips_by_week(context: AssetExecutionContext) -> MaterializeResult:
         where pickup_datetime >= '{}' and pickup_datetime <= '{}'
         group by week(pickup_datetime)
     """
-    conn = duckdb.connect(os.getenv(constants.ENV_DUCKDB_DATABASE))
     report_month = 10
     report_year = 2023
     current_date = date(report_year, report_month, 1)
@@ -106,7 +104,8 @@ def nyc_trips_by_week(context: AssetExecutionContext) -> MaterializeResult:
     current_date = current_date - relativedelta(days=current_date.weekday())
     while current_date < last_date:
         end_of_week = current_date + relativedelta(days=6)
-        week_trip = conn.execute(query.format(end_of_week, current_date, end_of_week)).fetchdf()
+        with database.get_connection() as conn:
+            week_trip = conn.execute(query.format(end_of_week, current_date, end_of_week)).fetchdf()
         context.log.debug(week_trip)
         df = pd.concat([df, week_trip])
         current_date += relativedelta(days=7)
