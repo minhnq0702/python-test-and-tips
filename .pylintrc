@@ -1,0 +1,20 @@
+[MESSAGES CONTROL]
+# Enable or disable specific pylint messages
+; disable = C0103, C0114, C0115, C0116
+disable = missing-module-docstring, too-few-public-methods
+
+[FORMAT]
+# Set the maximum line length
+max-line-length = 120
+
+[REPORTS]
+# Set the output format for pylint reports
+output-format = colorized
+
+[TYPECHECK]
+# Enable type checking
+disable = no-member
+
+; [IMPORTS]
+# Set the import order style
+; import-order-style = google
