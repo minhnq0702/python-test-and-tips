@@ -1,15 +1,18 @@
-from datetime import date
-from dateutil.relativedelta import relativedelta
 import base64
-import pandas as pd
+import os.path
+from datetime import date, datetime
+
 import geopandas as gpd
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects
 import plotly.io as pio
-
-from dagster import asset, MaterializeResult, MetadataValue, AssetExecutionContext
+from dagster import (AssetExecutionContext, MaterializeResult, MetadataValue,
+                     asset)
 from dagster_duckdb import DuckDBResource
+from dateutil.relativedelta import relativedelta
 
+from ..partitions import weekly_partition
 from . import constants
 
 
@@ -32,7 +35,7 @@ def nyc_manhattan_stats(database: DuckDBResource) -> MaterializeResult:
     # convert from geometry POLYGON dataobject to geopandas series
     zone_w_trip_count["geometry"] = gpd.GeoSeries.from_wkt(zone_w_trip_count["geometry"])
     zone_w_trip_count = gpd.GeoDataFrame(zone_w_trip_count)
-    with open(constants.MANHATTAN_STATS_FILE_PATH, "w") as f:
+    with open(constants.MANHATTAN_STATS_FILE_PATH, "wt") as f:
         f.write(zone_w_trip_count.to_json())
     return MaterializeResult(
         metadata={
@@ -75,7 +78,10 @@ def nyc_manhattan_map() -> MaterializeResult:
     )
 
 
-@asset(deps=["nyc_taxi_trips"])
+@asset(
+    deps=["nyc_taxi_trips"],
+    partitions_def=weekly_partition,
+)
 def nyc_trips_by_week(context: AssetExecutionContext, database: DuckDBResource) -> MaterializeResult:
     """
     Get Trip by Week dataset
@@ -90,29 +96,20 @@ def nyc_trips_by_week(context: AssetExecutionContext, database: DuckDBResource) 
             sum(total_amount) as total_amount,
             sum(trip_distance) as trip_distance 
         from trips
-        where pickup_datetime >= '{}' and pickup_datetime <= '{}'
-        group by week(pickup_datetime)
+        where pickup_datetime >= '{}' and pickup_datetime < '{}'::date + interval '1 week'
     """
-    report_month = 10
-    report_year = 2023
-    current_date = date(report_year, report_month, 1)
-    last_date = current_date + relativedelta(months=1, days=-1)
-
-    df = pd.DataFrame()
-
-    # shift current_date to fist date of week
-    current_date = current_date - relativedelta(days=current_date.weekday())
-    while current_date < last_date:
-        end_of_week = current_date + relativedelta(days=6)
-        with database.get_connection() as conn:
-            week_trip = conn.execute(query.format(end_of_week, current_date, end_of_week)).fetchdf()
-        context.log.debug(week_trip)
-        df = pd.concat([df, week_trip])
-        current_date += relativedelta(days=7)
+    context.log.debug(f"==> {context.partition_key}", )
+    start_date_of_week = context.partition_key
+    with database.get_connection() as conn:
+        df = conn.execute(query.format(start_date_of_week, start_date_of_week, start_date_of_week)).fetchdf()
     df["passenger_count"] = df["passenger_count"].astype(int)
     df["total_amount"] = df["total_amount"].round(2).astype(float)
     df["trip_distance"] = df["trip_distance"].round(2).astype(float)
-    df.to_csv(constants.TRIPS_BY_WEEK_FILE_PATH, index=False)
+    if os.path.isfile(constants.TRIPS_BY_WEEK_FILE_PATH):
+        exist = pd.read_csv(constants.TRIPS_BY_WEEK_FILE_PATH)
+        df = pd.concat([exist, df])
+    else:
+        df.to_csv(constants.TRIPS_BY_WEEK_FILE_PATH, index=False)
     return MaterializeResult(
         metadata={
             "Preview": MetadataValue.md(df.to_markdown())

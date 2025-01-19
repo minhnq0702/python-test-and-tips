@@ -1,7 +1,5 @@
-"""
-https://www.hackerearth.com/practice/algorithms/searching/linear-search/practice-problems/algorithm/equal-strings-79789662-4dbd707c/
-Equalize 2 binary string by flip element
-"""
+# https://www.hackerearth.com/practice/algorithms/searching/linear-search/practice-problems/algorithm/equal-strings-79789662-4dbd707c/
+# Equalize 2 binary string by flip element
 
 # TODO: need to refactor. it does running incorect for some testcase
 
@@ -35,8 +33,8 @@ def expand_bounder(diff, low, high, total_cost, cost):
     total_cost = 2
     lower_cost = (70 - 65) = 5
     higher_cost = (74 - 72) = 2
-    1/ cost to remove low - high => remove lower - higher = total_cost + min(higher - lower, cost) = 2 + min(74 - 65, 6) = 8
-    2/ cost to remove lower - low / high - higer = min(low - lower, 6) + min(higher - high, 6) = min(70 - 65) + min(74 - 72) = 7
+    1/ cost to remove low - high => remove lower - higher = total_cost + min(higher - lower, cost) = 2 + min(74 - 65, 6) = 8 # ignore
+    2/ cost to remove lower - low / high - higher = min(low - lower, 6) + min(higher - high, 6) = min(70 - 65) + min(74 - 72) = 7
     So, get select 2 and return
     """
     if low == 0 or high == len(diff) - 1 or (high - low) > cost:
@@ -88,4 +86,3 @@ def equal_strings():
             break
 
     print(total_cost)
-
