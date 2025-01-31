@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import logging
+
 from celery import Celery
 
 _logger = logging.getLogger(__name__)
