@@ -91,6 +91,20 @@ def thread_timer_func(tracking):
     Timer(2, _worker.run, (tracking,)).start()
 
 
+
+GLOBAL_VAR = 10
+def test_global_var_performance():
+    from itertools import batched, repeat
+    result = 0
+    LOCAL_VAR = GLOBAL_VAR
+    for b in batched(repeat(1, 1_000_000_000), 100_000_000):
+        for i in b:
+            result += 10 * LOCAL_VAR * i
+        print(f"complete to {i = }\n")
+    print(f"final-->{result = }")
+
+
+
 if __name__ == '__main__':
     # * super drome
     # super_drome()
@@ -103,14 +117,18 @@ if __name__ == '__main__':
     # print(test_func1(1, 2))
     # print(test_func1(2, 3))
 
-    workers: typing.Dict[int, Worker] = {}
-    thread_timer_func(workers)
-    print(f"Main process PID {os.getpid()}", workers)
+    # workers: typing.Dict[int, Worker] = {}
+    # thread_timer_func(workers)
+    # print(f"Main process PID {os.getpid()}", workers)
 
-    while 1:
-        try:
-            time.sleep(1)
-        except KeyboardInterrupt:
-            for worker in workers.values():
-                worker.stop()
-            break
+    # while 1:
+    #     try:
+    #         time.sleep(1)
+    #     except KeyboardInterrupt:
+    #         for worker in workers.values():
+    #             worker.stop()
+    #         break
+
+    from timeit import timeit
+    res = timeit(test_global_var_performance, number=1)
+    print(res)
