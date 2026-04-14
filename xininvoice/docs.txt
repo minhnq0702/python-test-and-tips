@@ -1,0 +1,3 @@
+curl --location 'https://api.xinvoice.vn/gdt-api/tax-payer/049180019494' \
+--header 'client-id: 61251923-92ee-4975-8b67-c90e4e5a7639' \
+--header 'api-key: de87383b-8e66-4b97-83e1-06252a44efb6'

@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  qr-scanner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: qr-scanner:latest
+    container_name: qr-code-scanner
+    volumes:
+      # Mount local images directory to scan different images
+      - ./:/app
+    environment:
+      - PYTHONUNBUFFERED=1
